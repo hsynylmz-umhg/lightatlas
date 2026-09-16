@@ -157,6 +157,10 @@ def random_mixture(
     seed: int = 42,
     n_points: int = 1024,
     dt: float = 0.0304,
+    quiet_ratio: float = 0.80,
+    flare_ratio: float = 0.10,
+    transit_ratio: float = 0.05,
+    eclipse_ratio: float = 0.05,
 ) -> SyntheticSet:
     """Generate a reproducible synthetic light curve mixture.
 
@@ -191,9 +195,9 @@ def random_mixture(
     rng = np.random.default_rng(seed)
     t = make_grid(n=n_points, dt=dt)
 
-    n_flare = int(round(n * 0.10))
-    n_transit = int(round(n * 0.05))
-    n_eclipse = int(round(n * 0.05))
+    n_flare = int(round(n * flare_ratio))
+    n_transit = int(round(n * transit_ratio))
+    n_eclipse = int(round(n * eclipse_ratio))
     n_quiet = n - (n_flare + n_transit + n_eclipse)
 
     category_counts = [
