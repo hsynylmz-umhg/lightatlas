@@ -68,6 +68,23 @@ class VQVAE(nn.Module):
             nn.ConvTranspose1d(width // 4, 1, kernel_size=4, stride=2, padding=1),
         )
 
+    def encode(self, x: torch.Tensor) -> torch.Tensor:
+        """Encode input light curves into continuous latent space.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (B, 1, n_points) or (B, n_points).
+
+        Returns
+        -------
+        torch.Tensor
+            Latent representation tensor of shape (B, latent_dim).
+        """
+        if x.ndim == 2:
+            x = x.unsqueeze(1)
+        return self.encoder(x)
+
     def forward(
         self, x: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:

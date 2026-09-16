@@ -10,4 +10,6 @@ except PackageNotFoundError:  # pragma: no cover
     except ImportError:
         __version__ = "0.0.0"
 
-__all__ = ["__version__"]
+from lightatlas.pipeline import PipelineConfig, run_pipeline
+
+__all__ = ["PipelineConfig", "__version__", "run_pipeline"]

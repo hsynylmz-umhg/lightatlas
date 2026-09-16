@@ -53,3 +53,7 @@ nosetests.xml
 .idea/
 .DS_Store
 Thumbs.db
+
+# Pipeline output runs and mkdocs site build
+runs/
+site/

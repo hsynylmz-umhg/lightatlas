@@ -1,0 +1,39 @@
+site_name: LightAtlas
+site_description: High-throughput Astronomical Light Curve Analysis & Photometric Classification
+site_author: Huseyin Yilmaz
+repo_url: https://github.com/hsynylmz-umhg/lightatlas
+repo_name: hsynylmz-umhg/lightatlas
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: cyan
+    accent: cyan
+  features:
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+
+nav:
+  - Overview: index.md
+  - Quick Start: quickstart.md
+  - Tutorials:
+      - Synthetic Demo: tutorials/01_synthetic_demo.md
+      - Scoring TESS: tutorials/02_scoring_tess.md
+      - Building an Atlas: tutorials/03_building_an_atlas.md

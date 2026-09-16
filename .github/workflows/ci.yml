@@ -68,3 +68,28 @@ jobs:
         run: |
           python -c "import torch; print(f'PyTorch {torch.__version__} (CUDA available: {torch.cuda.is_available()})')"
           pytest -q
+
+  docs:
+    name: Documentation Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install documentation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material "mkdocstrings[python]"
+          pip install -e .
+
+      - name: Build docs in strict mode
+        run: |
+          mkdocs build --strict
