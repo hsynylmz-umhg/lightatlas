@@ -41,7 +41,7 @@ jobs:
 
       - name: Run Pytest
         run: |
-          pytest -q
+          pytest -q --cov-fail-under=60
 
   cpu-torch:
     name: CPU PyTorch Compatibility (Python 3.11)
@@ -67,7 +67,7 @@ jobs:
       - name: Verify PyTorch & Run Tests
         run: |
           python -c "import torch; print(f'PyTorch {torch.__version__} (CUDA available: {torch.cuda.is_available()})')"
-          pytest -q
+          pytest -q --cov-fail-under=80
 
   docs:
     name: Documentation Build

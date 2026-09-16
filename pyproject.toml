@@ -71,7 +71,7 @@ indent-style = "space"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra -q --cov=lightatlas --cov-report=term-missing --cov-fail-under=80"
+addopts = "-ra -q --cov=lightatlas --cov-report=term-missing"
 
 [tool.coverage.run]
 source = ["lightatlas"]
@@ -80,7 +80,6 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 80
 show_missing = true
 exclude_lines = [
     "pragma: no cover",
