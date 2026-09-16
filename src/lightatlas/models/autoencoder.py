@@ -1,12 +1,24 @@
 """1D-CNN AutoEncoder anomaly scorer with deterministic training."""
 
 import numpy as np
-import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader, TensorDataset
+
+try:
+    import torch
+    import torch.nn as nn
+    from torch.utils.data import DataLoader, TensorDataset
+
+    HAS_TORCH = True
+except ImportError:
+    torch = None  # type: ignore[assignment]
+    nn = None  # type: ignore[assignment]
+    DataLoader = None  # type: ignore[assignment]
+    TensorDataset = None  # type: ignore[assignment]
+    HAS_TORCH = False
+
+_BaseModule = nn.Module if nn is not None else object
 
 
-class Conv1DAutoEncoder(nn.Module):
+class Conv1DAutoEncoder(_BaseModule):
     """3-layer 1D-CNN encoder and symmetric decoder preserving sequence length.
 
     Parameters
@@ -96,6 +108,10 @@ def train_autoencoder(
     tuple[Conv1DAutoEncoder, list[float]]
         Trained model instance and per-epoch average MSE losses.
     """
+    if not HAS_TORCH or torch is None:
+        raise ImportError(
+            "PyTorch is required to train the autoencoder. Install lightatlas[torch]."
+        )
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -161,6 +177,10 @@ def ae_anomaly_score(
     np.ndarray
         1D float64 array of MSE reconstruction scores.
     """
+    if not HAS_TORCH or torch is None:
+        raise ImportError(
+            "PyTorch is required to run autoencoder scoring. Install lightatlas[torch]."
+        )
     model.eval()
     model.to(device)
 

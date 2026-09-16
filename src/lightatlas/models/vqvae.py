@@ -1,14 +1,27 @@
 """Vector Quantized Variational AutoEncoder (VQ-VAE) for time-series anomaly detection."""
 
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 from sklearn.cluster import MiniBatchKMeans
-from torch.utils.data import DataLoader, TensorDataset
+
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    from torch.utils.data import DataLoader, TensorDataset
+
+    HAS_TORCH = True
+except ImportError:
+    torch = None  # type: ignore[assignment]
+    nn = None  # type: ignore[assignment]
+    F = None  # type: ignore[assignment]
+    DataLoader = None  # type: ignore[assignment]
+    TensorDataset = None  # type: ignore[assignment]
+    HAS_TORCH = False
+
+_BaseModule = nn.Module if nn is not None else object
 
 
-class VQVAE(nn.Module):
+class VQVAE(_BaseModule):
     """VQ-VAE model with 1D-CNN encoder, discrete codebook, and decoder.
 
     Parameters
@@ -173,6 +186,8 @@ def train_vqvae(
     tuple[VQVAE, list[float]]
         Trained model instance and per-epoch average losses.
     """
+    if not HAS_TORCH or torch is None:
+        raise ImportError("PyTorch is required to train VQ-VAE. Install lightatlas[torch].")
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -248,6 +263,8 @@ def codebook_usage(model: VQVAE, data: np.ndarray, device: str = "cpu") -> float
     float
         Fraction of activated codebook vectors in [0.0, 1.0].
     """
+    if not HAS_TORCH or torch is None:
+        raise ImportError("PyTorch is required for codebook usage. Install lightatlas[torch].")
     model.eval()
     model.to(device)
 
@@ -287,6 +304,8 @@ def vqvae_anomaly_score(
     np.ndarray
         1D float64 array of composite anomaly scores.
     """
+    if not HAS_TORCH or torch is None:
+        raise ImportError("PyTorch is required for VQ-VAE scoring. Install lightatlas[torch].")
     model.eval()
     model.to(device)
 

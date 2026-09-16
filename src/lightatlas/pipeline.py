@@ -1,5 +1,6 @@
 """Unified pipeline orchestration for LightAtlas anomaly discovery and atlas creation."""
 
+import logging
 from pathlib import Path
 from typing import Literal
 
@@ -12,9 +13,10 @@ from lightatlas.atlas.rank import rarity_score
 from lightatlas.atlas.report import render_gallery
 from lightatlas.core.features import feature_matrix
 from lightatlas.core.preproc import robust_normalize
-from lightatlas.models.ensemble import rank_average
-from lightatlas.models.isolation import IsolationScorer
+from lightatlas.models import HAS_TORCH, IsolationScorer, rank_average
 from lightatlas.synth import random_mixture
+
+logger = logging.getLogger(__name__)
 
 
 class PipelineConfig(BaseModel):
@@ -95,45 +97,53 @@ def run_pipeline(cfg: PipelineConfig) -> dict[str, Path]:
     iso_scores = iso_scorer.score(X_features)
 
     # 4. Layer 2: Deep Learning Models (PyTorch)
-    torch_available = False
-    try:
-        import torch
+    used_torch = False
+    if HAS_TORCH:
+        try:
+            import torch
 
-        from lightatlas.models.autoencoder import ae_anomaly_score, train_autoencoder
-        from lightatlas.models.vqvae import train_vqvae, vqvae_anomaly_score
+            from lightatlas.models.autoencoder import ae_anomaly_score, train_autoencoder
+            from lightatlas.models.vqvae import train_vqvae, vqvae_anomaly_score
 
-        torch_available = True
-    except ImportError:
-        pass
+            ae_model, _ = train_autoencoder(
+                f_norm,
+                epochs=cfg.ae_epochs,
+                seed=cfg.seed,
+            )
+            ae_scores = ae_anomaly_score(ae_model, f_norm)
 
-    if torch_available:
-        ae_model, _ = train_autoencoder(
-            f_norm,
-            epochs=cfg.ae_epochs,
-            seed=cfg.seed,
+            vq_model, _ = train_vqvae(
+                f_norm,
+                epochs=cfg.vqvae_epochs,
+                seed=cfg.seed,
+            )
+            vq_scores = vqvae_anomaly_score(vq_model, f_norm)
+
+            # 5. Composite Consensus Score
+            scores_map = {
+                "iso": iso_scores,
+                "autoencoder": ae_scores,
+                "vqvae": vq_scores,
+            }
+            composite_scores = rank_average(scores_map)
+
+            # Latent extraction from VQ-VAE
+            with torch.no_grad():
+                tensor_input = torch.as_tensor(f_norm, dtype=torch.float32)
+                Z_latent = vq_model.encode(tensor_input).cpu().numpy()
+
+            used_torch = True
+        except ImportError:
+            logger.warning(
+                "PyTorch models failed to import; falling back to Isolation Forest scoring."
+            )
+            used_torch = False
+
+    if not used_torch:
+        logger.warning(
+            "PyTorch not available. Running fallback pipeline with Isolation Forest "
+            "anomaly scoring and PCA latent representations."
         )
-        ae_scores = ae_anomaly_score(ae_model, f_norm)
-
-        vq_model, _ = train_vqvae(
-            f_norm,
-            epochs=cfg.vqvae_epochs,
-            seed=cfg.seed,
-        )
-        vq_scores = vqvae_anomaly_score(vq_model, f_norm)
-
-        # 5. Composite Consensus Score
-        scores_map = {
-            "iso": iso_scores,
-            "autoencoder": ae_scores,
-            "vqvae": vq_scores,
-        }
-        composite_scores = rank_average(scores_map)
-
-        # Latent extraction from VQ-VAE
-        with torch.no_grad():
-            tensor_input = torch.as_tensor(f_norm, dtype=torch.float32)
-            Z_latent = vq_model.encode(tensor_input).cpu().numpy()
-    else:
         composite_scores = iso_scores
         from sklearn.decomposition import PCA
 
