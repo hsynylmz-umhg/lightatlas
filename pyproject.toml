@@ -1,0 +1,88 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lightatlas"
+dynamic = ["version"]
+description = "High-throughput Astronomical Light Curve Analysis & Photometric Classification"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Huseyin Yilmaz", email = "huseynilmaz34@gmail.com"},
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "pandas",
+    "pyarrow",
+    "pydantic",
+    "typer",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+astro = [
+    "astropy>=5.0",
+]
+torch = [
+    "torch>=2.0.0",
+]
+cluster = [
+    "hdbscan>=0.8.33",
+    "umap-learn>=0.5.4",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools_scm]
+write_to = "src/lightatlas/_version.py"
+fallback_version = "0.0.0"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # Pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "PTH",  # flake8-use-pathlib
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q --cov=lightatlas --cov-report=term-missing --cov-fail-under=80"
+
+[tool.coverage.run]
+source = ["lightatlas"]
+omit = [
+    "src/lightatlas/_version.py",
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
