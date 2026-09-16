@@ -40,6 +40,9 @@ dev = [
     "ruff>=0.1.0",
 ]
 
+[project.scripts]
+lightatlas = "lightatlas.cli.main:app"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
