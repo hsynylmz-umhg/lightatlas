@@ -69,3 +69,22 @@ def test_save_load_roundtrip(tmp_path):
     loaded_scores = ae_anomaly_score(loaded_model, synth.f)
 
     np.testing.assert_allclose(orig_scores, loaded_scores, atol=1e-5)
+
+
+def test_vqvae_n_points_validation():
+    # 1. Invalid n_points in VQVAE constructor
+    with pytest.raises(ValueError, match="1024"):
+        VQVAE(n_points=512)
+
+    # 2. Invalid data length in train_vqvae
+    synth_512 = random_mixture(n=16, seed=42, n_points=512)
+    with pytest.raises(ValueError, match="1024"):
+        train_vqvae(synth_512.f, epochs=1, n_points=512)
+
+    # 3. Invalid data length in vqvae_anomaly_score and codebook_usage
+    valid_model = VQVAE(n_points=1024)
+    with pytest.raises(ValueError, match="1024"):
+        vqvae_anomaly_score(valid_model, synth_512.f)
+
+    with pytest.raises(ValueError, match="1024"):
+        codebook_usage(valid_model, synth_512.f)

@@ -64,3 +64,23 @@ def test_pipeline_deterministic_top1(tmp_path):
 
     # Top-1 anomaly ID must be deterministic across independent runs
     assert df1.iloc[0]["id"] == df2.iloc[0]["id"]
+
+
+def test_pipeline_non_1024_n_points(tmp_path):
+    out_dir = tmp_path / "pipeline_512"
+    cfg = PipelineConfig(
+        source="synthetic",
+        n_curves=30,
+        n_points=512,
+        seed=42,
+        ae_epochs=2,
+        out_dir=out_dir,
+    )
+    artifacts = run_pipeline(cfg)
+
+    assert artifacts["scores"].exists()
+    assert artifacts["gallery"].exists()
+
+    df = pd.read_parquet(artifacts["scores"])
+    assert len(df) == 30
+    assert "score" in df.columns

@@ -103,7 +103,6 @@ def run_pipeline(cfg: PipelineConfig) -> dict[str, Path]:
             import torch
 
             from lightatlas.models.autoencoder import ae_anomaly_score, train_autoencoder
-            from lightatlas.models.vqvae import train_vqvae, vqvae_anomaly_score
 
             ae_model, _ = train_autoencoder(
                 f_norm,
@@ -112,30 +111,45 @@ def run_pipeline(cfg: PipelineConfig) -> dict[str, Path]:
             )
             ae_scores = ae_anomaly_score(ae_model, f_norm)
 
-            vq_model, _ = train_vqvae(
-                f_norm,
-                epochs=cfg.vqvae_epochs,
-                seed=cfg.seed,
-            )
-            vq_scores = vqvae_anomaly_score(vq_model, f_norm)
-
-            # 5. Composite Consensus Score
             scores_map = {
                 "iso": iso_scores,
                 "autoencoder": ae_scores,
-                "vqvae": vq_scores,
             }
+
+            if cfg.n_points == 1024:
+                from lightatlas.models.vqvae import train_vqvae, vqvae_anomaly_score
+
+                vq_model, _ = train_vqvae(
+                    f_norm,
+                    epochs=cfg.vqvae_epochs,
+                    seed=cfg.seed,
+                    n_points=cfg.n_points,
+                )
+                vq_scores = vqvae_anomaly_score(vq_model, f_norm)
+                scores_map["vqvae"] = vq_scores
+
+                # Latent extraction from VQ-VAE
+                with torch.no_grad():
+                    tensor_input = torch.as_tensor(f_norm, dtype=torch.float32)
+                    Z_latent = vq_model.encode(tensor_input).cpu().numpy()
+            else:
+                logger.warning(
+                    "VQ-VAE requires n_points=1024 (got n_points=%d); skipping VQ-VAE and "
+                    "using PCA for latent representations.",
+                    cfg.n_points,
+                )
+                from sklearn.decomposition import PCA
+
+                pca = PCA(n_components=min(8, X_features.shape[1]), random_state=cfg.seed)
+                Z_latent = pca.fit_transform(X_features)
+
+            # 5. Composite Consensus Score
             composite_scores = rank_average(scores_map)
-
-            # Latent extraction from VQ-VAE
-            with torch.no_grad():
-                tensor_input = torch.as_tensor(f_norm, dtype=torch.float32)
-                Z_latent = vq_model.encode(tensor_input).cpu().numpy()
-
             used_torch = True
-        except ImportError:
+        except (ImportError, ValueError, RuntimeError) as exc:
             logger.warning(
-                "PyTorch models failed to import; falling back to Isolation Forest scoring."
+                "PyTorch models failed (%s); falling back to Isolation Forest scoring.",
+                exc,
             )
             used_torch = False
 

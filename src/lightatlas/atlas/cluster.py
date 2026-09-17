@@ -1,7 +1,11 @@
 """Latent space clustering module with HDBSCAN and Agglomerative fallback."""
 
+import logging
+
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
+
+logger = logging.getLogger(__name__)
 
 
 def cluster_latent(
@@ -48,11 +52,18 @@ def cluster_latent(
         )
         labels = clusterer.fit_predict(Z_arr)
         return labels.astype(np.int64)
-    except (ImportError, Exception):
-        n_clusters = max(1, min(8, n_samples // min_cluster_size))
-        clusterer = AgglomerativeClustering(
-            n_clusters=n_clusters,
-            linkage="average",
+    except ImportError:
+        logger.warning("hdbscan is not installed; falling back to AgglomerativeClustering.")
+    except (ValueError, TypeError, RuntimeError) as exc:
+        logger.warning(
+            "hdbscan failed (%s); falling back to AgglomerativeClustering.",
+            exc,
         )
-        labels = clusterer.fit_predict(Z_arr)
-        return labels.astype(np.int64)
+
+    n_clusters = max(1, min(8, n_samples // min_cluster_size))
+    clusterer = AgglomerativeClustering(
+        n_clusters=n_clusters,
+        linkage="average",
+    )
+    labels = clusterer.fit_predict(Z_arr)
+    return labels.astype(np.int64)

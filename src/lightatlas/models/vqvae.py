@@ -44,6 +44,11 @@ class VQVAE(_BaseModule):
         width: int = 64,
     ) -> None:
         super().__init__()
+        if n_points != 1024:
+            raise ValueError(
+                f"VQVAE currently requires n_points=1024 (got {n_points}). "
+                "Resample input light curves to 1024 points before using VQ-VAE."
+            )
         self.n_points = n_points
         self.latent_dim = latent_dim
         self.codebook_size = codebook_size
@@ -196,6 +201,11 @@ def train_vqvae(
         raise ValueError(f"data must be 2D array, got shape {data_arr.shape}")
 
     seq_len = data_arr.shape[1]
+    if seq_len != 1024 or n_points != 1024:
+        raise ValueError(
+            f"train_vqvae requires curves with exactly 1024 points (got data length {seq_len} "
+            f"and n_points={n_points}). Resample input curves to 1024 points before training."
+        )
     model = VQVAE(
         n_points=seq_len,
         latent_dim=latent_dim,
@@ -271,6 +281,12 @@ def codebook_usage(model: VQVAE, data: np.ndarray, device: str = "cpu") -> float
     data_arr = np.asarray(data, dtype=np.float32)
     if data_arr.ndim == 1:
         data_arr = data_arr[np.newaxis, :]
+    if data_arr.shape[1] != 1024 or model.n_points != 1024:
+        raise ValueError(
+            f"codebook_usage requires curves with exactly 1024 points "
+            f"(got length {data_arr.shape[1]} and model.n_points={model.n_points}). "
+            "Resample input curves to 1024 points."
+        )
 
     tensor_x = torch.from_numpy(data_arr).unsqueeze(1).to(device)
     with torch.no_grad():
@@ -313,6 +329,12 @@ def vqvae_anomaly_score(
     single_curve = data_arr.ndim == 1
     if single_curve:
         data_arr = data_arr[np.newaxis, :]
+    if data_arr.shape[1] != 1024 or model.n_points != 1024:
+        raise ValueError(
+            f"vqvae_anomaly_score requires curves with exactly 1024 points "
+            f"(got length {data_arr.shape[1]} and model.n_points={model.n_points}). "
+            "Resample input curves to 1024 points."
+        )
 
     n_samples = data_arr.shape[0]
     recon_errs = np.empty(n_samples, dtype=np.float64)

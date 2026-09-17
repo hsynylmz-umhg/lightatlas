@@ -13,14 +13,14 @@ authors = [
     {name = "Huseyin Yilmaz", email = "huseynilmaz34@gmail.com"},
 ]
 dependencies = [
-    "numpy",
-    "scipy",
-    "scikit-learn",
-    "pandas",
-    "pyarrow",
-    "pydantic",
-    "typer",
-    "tqdm",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "scikit-learn>=1.2",
+    "pandas>=2.0",
+    "pyarrow>=10.0",
+    "pydantic>=2.0",
+    "typer>=0.9",
+    "tqdm>=4.65",
 ]
 
 [project.optional-dependencies]
